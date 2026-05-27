@@ -1,0 +1,44 @@
+# Secrets / runtime artefacts
+.env
+*.log
+report-*.json
+reports/
+capture*.json
+captures/
+logs/
+aipf-artifacts/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.coverage
+coverage.xml
+htmlcov/
+site/
+
+# Virtualenvs
+.venv/
+venv/
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Local assistant/workflow metadata
+.agents/
+.codex/
+.ai-agents/
+.ai-workflow.md
+AGENTS.md
+PROJECT_RULES.md
