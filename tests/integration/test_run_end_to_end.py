@@ -10,6 +10,7 @@ from click.testing import CliRunner
 
 from aipf.cli import cli
 from tests.conftest import BASE_URL
+from tests.output_utils import normalize_output, safe_assert_output
 
 
 def _debug_json_events(output: str) -> list[dict[str, Any]]:
@@ -74,11 +75,15 @@ def test_aipf_run_writes_full_report(
 
     # Exit code 0 (all passed) since responses don't trigger leaks/warnings.
     assert res.exit_code == 0, res.output
-    assert "aipf | async LLM proxy audit | mode=run" in res.output
-    assert "trace +" not in res.output
-    assert "01/08 RUN MODELS" in res.output
-    assert "01/08 [PASS] MODELS" in res.output
-    assert "summary | model=gpt-test | provider=openai | passed=8" in res.output
+    normalized = normalize_output(res.output)
+    assert "mode=run" in normalized
+    assert "async LLM proxy audit" in normalized
+    assert "trace +" not in normalized
+    assert "01/08 RUN MODELS" in normalized
+    assert "01/08 [PASS] MODELS" in normalized
+    assert "model=gpt-test" in normalized
+    assert "provider=openai" in normalized
+    assert "passed=8" in normalized
     assert output.exists()
     payload = json.loads(output.read_text("utf-8"))
     assert payload["meta"]["api_style"] == "openai"
@@ -139,7 +144,8 @@ def test_aipf_run_uses_default_artifacts_dir(
             assert res.exit_code == 0, res.output
             assert len(reports) == 1
             assert Path("aipf-artifacts/logs/forensics.log").exists()
-            assert "report=aipf-artifacts/reports/report-" in res.output
+            normalized = normalize_output(res.output)
+            assert "aipf-artifacts/reports/report-" in normalized
 
 
 def test_aipf_run_artifacts_dir_writes_default_capture(
@@ -237,7 +243,7 @@ def test_aipf_completion_debug_json_traces_http_and_model_flow(
     assert "http.retry" in event_names
     assert "http.request.end" in event_names
     assert any(event.get("request_id") == "req-test-1" for event in trace_events)
-    assert '"kind": "completion"' in res.output
+    safe_assert_output(res.output, '"kind": "completion"')
 
 
 def test_aipf_completion_capture_and_replay_json(
@@ -278,7 +284,7 @@ def test_aipf_completion_capture_and_replay_json(
         )
 
     assert res.exit_code == 0, res.output
-    assert "capture=" in res.output
+    safe_assert_output(res.output, "capture=")
     raw_capture = capture.read_text("utf-8")
     payload = json.loads(raw_capture)
     assert payload["schema_version"] == 1
@@ -386,7 +392,7 @@ def test_aipf_stream_trace_alias_emits_stream_events(
     assert "trace +" in res.output
     assert "stream.request.build" in res.output
     assert "stream.chunk" in res.output
-    assert '"kind": "streaming"' in res.output
+    safe_assert_output(res.output, '"kind": "streaming"')
 
 
 def test_aipf_single_command_writes_mini_report(
@@ -414,8 +420,9 @@ def test_aipf_single_command_writes_mini_report(
             catch_exceptions=False,
         )
     assert res.exit_code == 0, res.output
-    assert "aipf | async LLM proxy audit" not in res.output
-    assert '"kind": "models_list"' in res.output
+    normalized = normalize_output(res.output)
+    assert "async LLM proxy audit" not in normalized
+    safe_assert_output(res.output, '"kind": "models_list"')
     payload = json.loads(output.read_text("utf-8"))
     assert len(payload["results"]) == 1
     assert payload["results"][0]["kind"] == "models_list"

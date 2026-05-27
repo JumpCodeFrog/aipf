@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import sys
 from collections.abc import Callable, Coroutine, Sequence
 from datetime import UTC, datetime
@@ -108,6 +109,10 @@ class NavigationExit(Exception):
 
 
 def _plain_console() -> bool:
+    if os.getenv("FORCE_PLAIN_OUTPUT") or os.getenv("AIPF_NO_COLOR"):
+        return True
+    if os.getenv("CI", "").lower() == "true":
+        return True
     return not stderr_console.is_terminal
 
 

@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
+from aipf import cli as cli_module
 from aipf.cli import cli
 
 EXPECTED_COMMANDS = (
@@ -237,3 +238,20 @@ def test_run_with_blank_env_values_shows_config_error(monkeypatch: pytest.Monkey
     assert "proxy base URL: Value error, base URL cannot be empty." in res.output
     assert "API key: Value error, API key cannot be empty." in res.output
     assert "Traceback" not in res.output
+
+
+def test_ci_env_forces_plain_console(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CI", "true")
+    monkeypatch.setenv("FORCE_COLOR", "1")
+
+    assert cli_module._plain_console() is True
+
+
+@pytest.mark.parametrize("env_var", ("FORCE_PLAIN_OUTPUT", "AIPF_NO_COLOR"))
+def test_plain_output_env_flags_force_plain_console(
+    monkeypatch: pytest.MonkeyPatch,
+    env_var: str,
+) -> None:
+    monkeypatch.setenv(env_var, "1")
+
+    assert cli_module._plain_console() is True
